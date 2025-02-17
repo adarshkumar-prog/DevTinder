@@ -19,12 +19,17 @@ const Userschema =  mongoose.Schema({
         required: true,
         unique: true,
         trim: true,
+        validate(value){
+            if(!validator.isEmail(value)){
+                throw new Error("Enter a valid email address");
+            }
+        }
     },
     password : {
         type : String,
         required: true,
         validate(value){
-            if(!validators.isStrongPassword(value)){
+            if(!validator.isStrongPassword(value)){
                 throw new Error("Enter a Strong Password: " + value);
             }
         },
@@ -56,18 +61,25 @@ const Userschema =  mongoose.Schema({
             }
         },
     },
-});
+}, { timeStamp : true });
 
 Userschema.index({firstName: 1, lastName: 1});
 
 Userschema.methods.getJWT = async function(){
     const user = this;
-
-    const token = await JsonWebTokenError.sign({_id: user._id }, "DEV@Tinder$790", {
-        expiresIn: "7d",
-    })
+    const token = await jwt.sign({_id: user._id },
+    "DEV@Tinder$790", { expiresIn: "7d", })
     return token;
 };
+
+
+Userschema.methods.validatePassword = async function(passwordInputByUser){
+    const user = this;
+    const passwordHash = user.password;
+
+    const isPasswordValid = await bcrypt.compare(passwordInputByUser, passwordHash);
+    return isPasswordValid;
+}
 
 const UserModel = mongoose.model("User", Userschema);
 
