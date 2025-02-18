@@ -9,16 +9,21 @@ authRouter.post("/signup", async(req, res) => {
     try{
         validateSignUpData(req);
 
-        const { firstName, lastName, emailId, password } = req.body;
+        const { firstName, lastName, emailId, password , age, gender, skills, about} = req.body;
 
-        const passwordHash = await bcrypt.hash(user.password, 10);
+        const passwordHash = await bcrypt.hash(password, 10);
 
         const user = new User({
             firstName,
             lastName,
             emailId,
             password,
+            age,
+            gender,
+            skills,
+            about,
         });
+      console.log(user);
 
         user.password = passwordHash;
         await user.save();
@@ -37,7 +42,7 @@ authRouter.post("/login", async(req, res)=> {
         const user = await User.findOne({emailId});
 
         if(!user){
-            throw new Error("Invalid Credentials!!");
+            throw new Error("Invalid Credentials not user found!!");
         }
 
         const isPasswordValid = await user.validatePassword(password);
@@ -46,7 +51,7 @@ authRouter.post("/login", async(req, res)=> {
 
             const token = await user.getJWT();
 
-            res.cookies("token", token,
+            res.cookie("token", token,
 
             {expires: new Date(Date.now() + 24 * 60 * 60 * 1000)});
 
@@ -62,7 +67,7 @@ authRouter.post("/login", async(req, res)=> {
 });
 
 authRouter.post("/logout", async(req, res) => {
-    res.cookies("token", null, {
+    res.cookie("token", null, {
         expires : new Date(Date.now()),
     });
     res.send("Logged Out successful!");

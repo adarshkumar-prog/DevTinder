@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const validator = require('validators');
+const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
@@ -54,9 +54,9 @@ const Userschema =  mongoose.Schema({
     },
     photoUrl: {
         type: String,
-        default: "",
+        //default: "",
         validate(value){
-            if(!validators.isURL(value)){
+            if(!validator.isURL(value)){
                 throw new Error("Invalid Photo URL : " + value);
             }
         },

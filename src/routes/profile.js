@@ -1,65 +1,68 @@
 const express = require('express');
 const profileRouter = express.Router();
 const { userAuth } = require("../middlewares/auth");
-const {validateEditProfileData} = require("../utils/validation");
-const validators = require('validators/lib/validators');
+const { validateEditProfileData } = require("../utils/validation");
+const validator = require('validator');
+const bcrypt = require('bcrypt');
 
 profileRouter.get("/profile/view", userAuth, async(req, res) => {
     try{
-        const cookie = req.cookies;
-        const { token } = cookie;
-
-        const isTokenValid = await Jwt.verify(token, "DEVTinder@790");
-        if(!isTokenValid){
-            throw new Error("Unauthorized User");
-        }
-            const { _id } = isTokenValid;
-            console.log(`Logged in user is : ${_id}`);
-            const user = await User.findById(_id);
-            if(!user){
-                throw new Error("User not found!");
-            }
+        const user = req.user;
             res.send(user);
          }catch(err){
          res.status(400).send("ERROR : " + err.message);
     };
 });
 
-profileRouter.patch("profile/edit", userAuth, async (req, res) => {
+profileRouter.patch("/profile/edit", userAuth, async (req, res) => {
     try{
         if(!validateEditProfileData(req)){
             throw new Error(("Invalid edit request"));
         }
-        const loggedInUser = req.body;
+        const loggedInUser = req.user;
+        console.log("Before : " + loggedInUser);
     
         Object.keys(req.body).forEach((key) => loggedInUser[key] = req.body[key]);
         await loggedInUser.save();
+        console.log("after : " + loggedInUser);
     
         res.send(`${loggedInUser.firstName}, your profile is updated Successfully !`);
 
 }catch(err){
+    console.log(err);
     res.status(400).send("ERROR : " + err.message);
 }
-})
+});
 
-profileRouter.patch("/profile/password/edit", userAuth, async(req, res) => {
-    try{
-        const loggedInUser = req.body;
-        const { oldPassword, newPassword } = loggedInUser;
-        const isOldPasswordCorrect = await bcrypt.compare(oldPassword, newPassword);
-        const isNewPasswordStrong = validators.isStrongPassword(newPassword);
-        if(isOldPasswordCorrect && isNewPasswordStrong){
-            loggedInUser.password = newPassword;
-            await loggedInUser.save();
-            res.send(`${loggedInUser.firstName}, your password is updated Successfully !`);
+// PATCH: Change Password
+profileRouter.patch("/profile/password/edit", userAuth, async (req, res) => {
+    try {
+
+        const loggedInUser = req.user;
+        const { oldPassword, newPassword } = req.body;
+
+        const isOldPasswordCorrect = await bcrypt.compare(oldPassword, loggedInUser.password);
+        if (!isOldPasswordCorrect) {
+            return res.status(400).send("ERROR: Old password is incorrect!");
         }
-        else{
-            throw new Error("Failed to change password!");
+
+        
+        const isNewPasswordStrong = validator.isStrongPassword(newPassword);
+        if (!isNewPasswordStrong) {
+            return res.status(400).send("ERROR: New password is not strong enough!");
         }
-    }catch(err){
-        res.status(400).send("ERROR : " + err.message);
+
+        loggedInUser.password = await bcrypt.hash(newPassword, 10);
+        await loggedInUser.save();
+
+        res.send(`${loggedInUser.firstName}, your password has been updated successfully!`);
+    } catch (err) {
+        res.status(500).send("ERROR: " + err.message);
     }
-})
+});
+
+module.exports = profileRouter;
+
 
 
 module.exports = { profileRouter };

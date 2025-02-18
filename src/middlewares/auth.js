@@ -2,24 +2,31 @@ const jwt = require('jsonwebtoken');
 const User = require("../models/user.js");
 
 
-const adminAuth = async (req, res, next) => {
+const userAuth = async (req, res, next) => {
 
-try{const cookie = req.cookies;
-const { token } = cookie;
+try{
+    const {token} = req.cookies;
+    console.log(token);
+    console.log("Verifying Token");
+    const decodedMessage = await jwt.verify(token, "DEV@Tinder$790");
 
-const decodedMessage = await jwt.verify(token, "DEVTinder@790");
+    console.log(decodedMessage);
 
-const { _id } = decodedMessage;
+    if(!decodedMessage){
+        throw new Error("Invalid Token");
+    };
 
-const user = await UserActivation.findOne({_id});
-if(!user) {
-throw new Error("user not found");
+    const { _id } = decodedMessage;
+    const user = await User.findOne({_id});
+    if(!user) {
+    throw new Error("user not found");
+    }
+    req.user = user;
+    next();
 }
-next();
-}
-catch(err){
+  catch(err){
     res.status(400).send("ERROR: " + err.message);
 }
 };
 module.exports = { 
-    adminAuth, };
+    userAuth, };
