@@ -1,7 +1,7 @@
 const express = require('express');
 const requestRouter = express.Router();
 const { userAuth } = require("../middlewares/auth");
-const {ConnectionRequest}  = require('../models/connectionRequest');
+const ConnectionRequest  = require('../models/connectionRequest');
 const User = require("../models/user");
 
 requestRouter.post(
@@ -12,8 +12,7 @@ requestRouter.post(
      const fromUserId = req.user._id;
      const toUserId = req.params.toUserId;
      const status = req.params.status;
-     console.log("FromUserId: " +fromUserId, "toUserId : " +toUserId, "Status :"+ status);
-
+    
      const allowedStatus = ["ignored", "interested"];
 
      if(!allowedStatus.includes(status)){
@@ -24,6 +23,8 @@ requestRouter.post(
        if(!toUser){
            return res.status(404).json({message: "User not found!!"});
         } 
+
+        console.log(toUser);
 
      const existingConnectionRequest = await ConnectionRequest.findOne({
         $or: [
